@@ -1,299 +1,326 @@
+
+const API_BASE_URL =
+    "https://iglv60wmjf.execute-api.ap-south-1.amazonaws.com";
+
 let currentSubject = "";
 let currentUnit = 1;
 let currentResource = "Notes";
-let currentPage = "home";
+let cachedNotes = null;
 
-/* Academic years for PYQ */
-const academicYears = [
-    "2025-26",
-    "2024-25",
-    "2023-24",
-    "2022-23",
-    "2021-22"
+const pageIds = [
+    "subjects",
+    "options-section",
+    "material-section",
+    "unit-section",
+    "resource-section",
+    "pyq-section"
 ];
 
-/* Helper: show one section and hide the others */
-function showSection(sectionId) {
-    const sectionIds = [
-        "subjects",
-        "options-section",
-        "material-section",
-        "unit-section",
-        "resource-section",
-        "pyq-section"
-    ];
-
-    sectionIds.forEach(function (id) {
-        const section = document.getElementById(id);
-
-        if (section) {
-            section.hidden = id !== sectionId;
-        }
+function showPage(pageId) {
+    pageIds.forEach((id) => {
+        const page = document.getElementById(id);
+        if (page) page.hidden = id !== pageId;
     });
 
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-/* 1. Select a subject */
+function normalize(value) {
+    return String(value ?? "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+}
+
+function expectedApiSubject() {
+    if (currentSubject === "Data Structures") return "DS";
+    if (currentSubject === "Maths-4") return "Maths 4";
+
+    return currentSubject;
+}
+
 function selectSubject(subject) {
     currentSubject = subject;
-    currentPage = "options";
 
-    document.getElementById("selected-subject").textContent = subject;
+    document.getElementById("selected-subject").textContent =
+        subject;
 
-    showSection("options-section");
-    window.history.pushState(
-        { page: "options" },
-        "",
-        "#options"
-    );
+    document.getElementById("pyq-heading").textContent =
+        subject + " - Previous Year Questions";
+
+    showPage("options-section");
 }
 
-/* 2. Open Study Material */
 function openStudyMaterial() {
-    currentPage = "material";
-
     document.getElementById("material-heading").textContent =
         currentSubject + " - Study Material";
 
-    showSection("material-section");
-    window.history.pushState(
-        { page: "material" },
-        "",
-        "#study-material"
-    );
+    showPage("material-section");
 }
 
-/* 3. Open Notes or Lectures and display units */
-function openUnits(resourceType) {
-    currentResource = resourceType;
-    currentPage = "units";
-
-    document.getElementById("unit-resource-label").textContent =
-        resourceType === "Notes" ? "STUDY NOTES" : "VIDEO LECTURES";
-
-    document.getElementById("selected-unit-heading").textContent =
-        currentSubject + " - " + resourceType;
-
-    const unitButtons = document.getElementById("unit-buttons");
-    unitButtons.innerHTML = "";
-
-    for (let i = 1; i <= 5; i++) {
-        const button = document.createElement("button");
-
-        button.type = "button";
-        button.textContent = "Unit " + i;
-
-        button.addEventListener("click", function () {
-            selectUnit(i);
-        });
-
-        unitButtons.appendChild(button);
-    }
-
-    showSection("unit-section");
-    window.history.pushState(
-        { page: "units" },
-        "",
-        "#units"
-    );
-}
-
-/* 4. Open selected unit */
-function selectUnit(unit) {
-    currentUnit = unit;
-    currentPage = "resource";
-
-    document.getElementById("selected-unit").textContent =
-        currentSubject + " - Unit " + currentUnit;
-
-    document.getElementById("resource-label").textContent =
-        currentResource === "Notes" ? "STUDY NOTES" : "VIDEO LECTURES";
-
-    const resourceContent = document.getElementById("resource-content");
-    resourceContent.innerHTML = "";
-
-    const heading = document.createElement("h3");
-    heading.textContent =
-        currentSubject + " - Unit " + currentUnit + " " + currentResource;
-
-    const message = document.createElement("p");
-
-    if (currentResource === "Notes") {
-        message.textContent =
-            "Notes for " + currentSubject + ", Unit " + currentUnit +
-            " will appear here once the PDF is connected.";
-    } else {
-        message.textContent =
-            "Video lecture links for " + currentSubject +
-            ", Unit " + currentUnit +
-            " will appear here once they are added.";
-    }
-
-    const note = document.createElement("p");
-    note.textContent =
-        "Study material is not connected yet. We will add the actual files and links next.";
-
-    resourceContent.appendChild(heading);
-    resourceContent.appendChild(message);
-    resourceContent.appendChild(note);
-
-    showSection("resource-section");
-    window.history.pushState(
-        { page: "resource" },
-        "",
-        "#resource"
-    );
-}
-
-/* 5. Open the separate PYQ section */
 function openPYQ() {
-    currentPage = "pyq";
-
     document.getElementById("pyq-heading").textContent =
         currentSubject + " - Previous Year Questions";
 
-    const yearSelect = document.getElementById("pyq-year");
-    const typeSelect = document.getElementById("pyq-type");
-
-    // Ensure the latest 5 academic years are available
-    yearSelect.innerHTML = "";
-
-    academicYears.forEach(function (year) {
-        const option = document.createElement("option");
-        option.value = year;
-        option.textContent = year;
-        yearSelect.appendChild(option);
-    });
-
-    // Default selections
-    yearSelect.value = "2025-26";
-    typeSelect.value = "all";
-
     updatePYQMessage();
-
-    showSection("pyq-section");
-    window.history.pushState(
-        { page: "pyq" },
-        "",
-        "#pyq"
-    );
+    showPage("pyq-section");
 }
 
-/* 6. Update the PYQ information when filters change */
-function updatePYQMessage() {
-    const yearSelect = document.getElementById("pyq-year");
-    const typeSelect = document.getElementById("pyq-type");
-    const result = document.getElementById("pyq-result");
+function openUnits(type) {
+    currentResource = type;
 
-    if (!yearSelect || !typeSelect || !result) {
+    document.getElementById("unit-resource-label").textContent =
+        type.toUpperCase();
+
+    document.getElementById("selected-unit-heading").textContent =
+        currentSubject + " - " + type;
+
+    document.getElementById("unit-buttons").replaceChildren();
+
+    for (let unit = 1; unit <= 5; unit++) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "unit-button";
+        button.textContent = "Unit " + unit;
+        button.addEventListener("click", () => selectUnit(unit));
+
+        document.getElementById("unit-buttons").appendChild(button);
+    }
+
+    showPage("unit-section");
+}
+
+async function selectUnit(unit) {
+    currentUnit = unit;
+
+    document.getElementById("selected-unit").textContent =
+        `${currentSubject} - Unit ${unit} - ${currentResource}`;
+
+    document.getElementById("resource-label").textContent =
+        currentResource.toUpperCase();
+
+    showPage("resource-section");
+    await showResources();
+}
+
+async function getNotesList() {
+    if (cachedNotes) return cachedNotes;
+
+    const response = await fetch(API_BASE_URL + "/");
+    let data = await response.json();
+
+    if (data && typeof data.body === "string") {
+        try {
+            data = JSON.parse(data.body);
+        } catch {
+            // Keep the original response if body is not JSON.
+        }
+    }
+
+    if (!response.ok || !data.ok || !Array.isArray(data.notes)) {
+        throw new Error("AWS API notes list response was not valid.");
+    }
+
+    cachedNotes = data.notes;
+    return cachedNotes;
+}
+
+async function getSignedPDFUrl(noteKey) {
+    const url = new URL(API_BASE_URL + "/");
+    url.searchParams.set("key", noteKey);
+
+    const response = await fetch(url.toString());
+    let data = await response.json();
+
+    if (data && typeof data.body === "string") {
+        try {
+            data = JSON.parse(data.body);
+        } catch {
+            // Keep the original response if body is not JSON.
+        }
+    }
+
+    if (!response.ok || !data.ok || !data.url) {
+        throw new Error(
+            "AWS API did not return a PDF URL. The notes-list API works, " +
+            "but the Lambda PDF-link response needs to be checked."
+        );
+    }
+
+    return data.url;
+}
+
+function addMessage(container, message) {
+    const paragraph = document.createElement("p");
+    paragraph.textContent = message;
+    container.appendChild(paragraph);
+}
+
+async function showResources() {
+    const container = document.getElementById("resource-content");
+    container.replaceChildren();
+
+    if (currentResource === "Lectures") {
+        const heading = document.createElement("h3");
+        heading.textContent = "Video Lectures";
+        container.appendChild(heading);
+
+        addMessage(
+            container,
+            "Video lecture links have not been connected yet. " +
+            "The unit-wise lecture section is ready."
+        );
         return;
     }
 
-    result.innerHTML = "";
+    const heading = document.createElement("h3");
+    heading.textContent = "Available Notes";
+    container.appendChild(heading);
 
-    const details = document.createElement("p");
-    details.textContent =
-        "Subject: " + currentSubject +
-        " | Year: " + yearSelect.value +
-        " | Paper: " +
-        typeSelect.options[typeSelect.selectedIndex].text;
+    addMessage(container, "Loading notes from AWS...");
 
-    const message = document.createElement("p");
-    message.textContent =
-        "The question paper for this selection has not been connected yet. " +
-        "After we add the actual paper, it will be available here.";
+    try {
+        const notes = await getNotesList();
 
-    result.appendChild(details);
-    result.appendChild(message);
+        const subjectToMatch = normalize(expectedApiSubject());
+        const unitToMatch = normalize("unit" + currentUnit);
+
+        const matchingNotes = notes.filter((note) => {
+            return (
+                normalize(note.subject) === subjectToMatch &&
+                normalize(note.unit) === unitToMatch
+            );
+        });
+
+        container.replaceChildren();
+        container.appendChild(heading);
+
+        if (matchingNotes.length === 0) {
+            addMessage(
+                container,
+                "No PDF notes are uploaded for this subject and unit yet."
+            );
+            return;
+        }
+
+        addMessage(container, matchingNotes.length + " PDF file(s) found.");
+
+        matchingNotes.forEach((note) => {
+            const card = document.createElement("div");
+            card.className = "resource-item";
+
+            const name = document.createElement("h3");
+            name.className = "resource-title";
+            name.textContent = note.name;
+
+            const details = document.createElement("p");
+            details.className = "resource-meta";
+            details.textContent =
+                `${note.subject} • ${note.unit}`;
+
+            const link = document.createElement("a");
+            link.className = "resource-link";
+            link.href = "#";
+            link.textContent = "Open PDF ↗";
+
+            link.addEventListener("click", async (event) => {
+                event.preventDefault();
+
+                // Open a tab immediately so the browser is less likely
+                // to block it while the signed URL is being requested.
+                const pdfTab = window.open("about:blank", "_blank");
+
+                link.textContent = "Getting PDF link...";
+                link.style.pointerEvents = "none";
+
+                try {
+                    const signedUrl = await getSignedPDFUrl(note.key);
+
+                    if (pdfTab && !pdfTab.closed) {
+                        pdfTab.location.href = signedUrl;
+                    } else {
+                        window.location.href = signedUrl;
+                    }
+                } catch (error) {
+                    if (pdfTab && !pdfTab.closed) pdfTab.close();
+
+                    console.error("PDF opening error:", error);
+
+                    alert(
+                        "PDF link nahi mila. Notes listing API chal rahi hai, " +
+                        "lekin Lambda ka signed-URL response check karna hoga."
+                    );
+                } finally {
+                    link.textContent = "Open PDF ↗";
+                    link.style.pointerEvents = "";
+                }
+            });
+
+            card.appendChild(name);
+            card.appendChild(details);
+            card.appendChild(link);
+            container.appendChild(card);
+        });
+    } catch (error) {
+        console.error("Notes loading error:", error);
+        container.replaceChildren();
+
+        const heading = document.createElement("h3");
+        heading.textContent = "Unable to Load Notes";
+        container.appendChild(heading);
+
+        addMessage(
+            container,
+            "AWS se notes load nahi ho paye. Internet, CORS settings " +
+            "aur API response check karo."
+        );
+    }
 }
 
-/* 7. Back navigation */
 function backToOptions() {
-    currentPage = "options";
-
-    document.getElementById("selected-subject").textContent = currentSubject;
-
-    showSection("options-section");
-    window.history.pushState(
-        { page: "options" },
-        "",
-        "#options"
-    );
+    showPage("options-section");
 }
 
 function backToMaterial() {
-    currentPage = "material";
-
-    showSection("material-section");
-    window.history.pushState(
-        { page: "material" },
-        "",
-        "#study-material"
-    );
+    showPage("material-section");
 }
 
 function backToUnits() {
-    currentPage = "units";
-
-    showSection("unit-section");
-    window.history.pushState(
-        { page: "units" },
-        "",
-        "#units"
-    );
+    showPage("unit-section");
 }
 
-/* 8. Return to the home page */
 function goHome() {
-    currentSubject = "";
-    currentUnit = 1;
-    currentResource = "Notes";
-    currentPage = "home";
-
-    showSection("subjects");
-
-    window.history.pushState(
-        { page: "home" },
-        "",
-        "#home"
-    );
+    showPage("subjects");
 }
 
-/* 9. Browser Back button support */
-window.addEventListener("popstate", function (event) {
-    const page = event.state ? event.state.page : "home";
+function updatePYQMessage() {
+    const year = document.getElementById("pyq-year").value;
+    const type = document.getElementById("pyq-type").value;
+    const result = document.getElementById("pyq-result");
 
-    currentPage = page;
+    result.textContent =
+        `${currentSubject} • ${year} • ` +
+        (type === "all" ? "Complete Paper" : "Unit-wise Questions") +
+        ". PYQ files have not been connected yet.";
+}
 
-    const pageToSection = {
-        home: "subjects",
-        options: "options-section",
-        material: "material-section",
-        units: "unit-section",
-        resource: "resource-section",
-        pyq: "pyq-section"
-    };
+document.addEventListener("DOMContentLoaded", () => {
+    const year = document.getElementById("pyq-year");
+    const type = document.getElementById("pyq-type");
 
-    showSection(pageToSection[page] || "subjects");
+    if (year) year.addEventListener("change", updatePYQMessage);
+    if (type) type.addEventListener("change", updatePYQMessage);
 });
 
-/* 10. Listen for PYQ filter changes */
-document.addEventListener("DOMContentLoaded", function () {
-    const yearSelect = document.getElementById("pyq-year");
-    const typeSelect = document.getElementById("pyq-type");
-
-    if (yearSelect) {
-        yearSelect.addEventListener("change", updatePYQMessage);
-    }
-
-    if (typeSelect) {
-        typeSelect.addEventListener("change", updatePYQMessage);
-    }
-});
+// Make functions available to the onclick handlers in index.html.
+window.selectSubject = selectSubject;
+window.openStudyMaterial = openStudyMaterial;
+window.openPYQ = openPYQ;
+window.openUnits = openUnits;
+window.selectUnit = selectUnit;
+window.backToOptions = backToOptions;
+window.backToMaterial = backToMaterial;
+window.backToUnits = backToUnits;
+window.goHome = goHome;
 
 
 
