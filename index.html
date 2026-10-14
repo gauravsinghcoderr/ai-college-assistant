@@ -1,0 +1,249 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI College Assistant</title>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">AI College Assistant</div>
+
+        <button class="home-btn" onclick="goHome()">
+            🏠 Home
+        </button>
+    </header>
+
+    <!-- Home / Subjects -->
+    <main>
+
+        <section id="subjects" class="subjects-section">
+            <div class="hero">
+                <p class="eyebrow">YOUR SMART STUDY PARTNER</p>
+                <h1>Learn Smarter, Score Better</h1>
+                <p>
+                    Access study material, video lectures,
+                    previous year questions and AI assistance.
+                </p>
+            </div>
+
+            <h2>Select Your Subject</h2>
+
+            <div class="subject-grid">
+
+                <button
+                    class="subject-card"
+                    onclick="selectSubject('Data Structures')">
+
+                    <span class="card-icon">💻</span>
+                    <h3>Data Structures</h3>
+                    <p>DS Notes, Lectures and PYQs</p>
+                    <span class="card-link">Explore Subject →</span>
+                </button>
+
+                <button
+                    class="subject-card"
+                    onclick="selectSubject('Maths-4')">
+
+                    <span class="card-icon">📐</span>
+                    <h3>Maths-4</h3>
+                    <p>Mathematics Notes, Lectures and PYQs</p>
+                    <span class="card-link">Explore Subject →</span>
+                </button>
+
+                <button
+                    class="subject-card"
+                    onclick="selectSubject('Computer Organization and Architecture')">
+
+                    <span class="card-icon">🖥️</span>
+                    <h3>Computer Organization</h3>
+                    <p>COA study resources</p>
+                    <span class="card-link">Explore Subject →</span>
+                </button>
+
+            </div>
+        </section>
+
+        <!-- Subject Options -->
+        <section id="options-section" class="content-section" hidden>
+
+            <button class="back-btn" onclick="goHome()">
+                ← Back to Subjects
+            </button>
+
+            <div class="section-heading">
+                <p class="eyebrow">YOUR SUBJECT</p>
+                <h2 id="selected-subject">Select an Option</h2>
+                <p>Choose what you want to study.</p>
+            </div>
+
+            <div class="option-grid">
+
+                <button
+                    class="option-card"
+                    onclick="openStudyMaterial()">
+
+                    <span class="card-icon">📚</span>
+                    <h3>Study Material</h3>
+                    <p>Notes and video lectures organized by unit.</p>
+                    <span class="card-link">Open Study Material →</span>
+                </button>
+
+                <button
+                    class="option-card"
+                    onclick="openPYQ()">
+
+                    <span class="card-icon">📝</span>
+                    <h3>Previous Year Questions</h3>
+                    <p>Choose an academic year and find question papers.</p>
+                    <span class="card-link">Explore PYQs →</span>
+                </button>
+
+            </div>
+        </section>
+
+        <!-- Study Material: Notes or Lectures -->
+        <section id="material-section" class="content-section" hidden>
+
+            <button class="back-btn" onclick="backToOptions()">
+                ← Back to Options
+            </button>
+
+            <div class="section-heading">
+                <p class="eyebrow">STUDY MATERIAL</p>
+                <h2 id="material-heading">Study Material</h2>
+                <p>Select Notes or Video Lectures.</p>
+            </div>
+
+            <div class="option-grid">
+
+                <button
+                    class="option-card"
+                    onclick="openUnits('Notes')">
+
+                    <span class="card-icon">📖</span>
+                    <h3>Notes</h3>
+                    <p>Open unit-wise notes and PDFs.</p>
+                    <span class="card-link">Browse Notes →</span>
+                </button>
+
+                <button
+                    class="option-card"
+                    onclick="openUnits('Lectures')">
+
+                    <span class="card-icon">🎥</span>
+                    <h3>Video Lectures</h3>
+                    <p>Find lectures organized by unit.</p>
+                    <span class="card-link">Browse Lectures →</span>
+                </button>
+
+            </div>
+        </section>
+
+        <!-- Units -->
+        <section id="unit-section" class="content-section" hidden>
+
+            <button class="back-btn" onclick="backToMaterial()">
+                ← Back to Study Material
+            </button>
+
+            <div class="section-heading">
+                <p class="eyebrow" id="unit-resource-label">NOTES</p>
+                <h2 id="selected-unit-heading">Select Unit</h2>
+                <p>Select a unit to view its material.</p>
+            </div>
+
+            <div id="unit-buttons" class="unit-grid"></div>
+
+        </section>
+
+        <!-- Selected Unit Resource -->
+        <section id="resource-section" class="content-section" hidden>
+
+            <button class="back-btn" onclick="backToUnits()">
+                ← Back to Units
+            </button>
+
+            <div class="section-heading">
+                <p class="eyebrow" id="resource-label">STUDY RESOURCE</p>
+                <h2 id="selected-unit">Selected Unit</h2>
+            </div>
+
+            <div id="resource-content" class="resource-content"></div>
+
+            <div class="ai-placeholder">
+                <span class="card-icon">🤖</span>
+                <h3>Have a Doubt?</h3>
+                <p>
+                    An AI Doubt Solver will be added here to explain
+                    topics in simple language.
+                </p>
+            </div>
+
+        </section>
+
+        <!-- Separate PYQ Section -->
+        <section id="pyq-section" class="content-section" hidden>
+
+            <button class="back-btn" onclick="backToOptions()">
+                ← Back to Options
+            </button>
+
+            <div class="section-heading">
+                <p class="eyebrow">EXAM PREPARATION</p>
+                <h2 id="pyq-heading">Previous Year Questions</h2>
+                <p>Select an academic year and paper type.</p>
+            </div>
+
+            <div class="pyq-panel">
+
+                <label for="pyq-year" class="pyq-label">
+                    Academic Year
+                </label>
+
+                <select id="pyq-year" class="pyq-select">
+                    <option value="2025-26" selected>2025–26</option>
+                    <option value="2024-25">2024–25</option>
+                    <option value="2023-24">2023–24</option>
+                    <option value="2022-23">2022–23</option>
+                    <option value="2021-22">2021–22</option>
+                </select>
+
+                <label for="pyq-type" class="pyq-label">
+                    Question Paper Type
+                </label>
+
+                <select id="pyq-type" class="pyq-select">
+                    <option value="all" selected>
+                        All Questions / Complete Paper
+                    </option>
+                    <option value="unit">
+                        Unit-wise Questions
+                    </option>
+                </select>
+
+                <div id="pyq-result" class="pyq-result">
+                    Select a year to view available papers.
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>AI College Assistant | Your Learning Companion</p>
+    </footer>
+
+</body>
+</html>
+
