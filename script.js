@@ -123,11 +123,10 @@ async function getNotesList() {
     cachedNotes = data.notes;
     return cachedNotes;
 }
-
 async function getSignedPDFUrl(noteKey) {
     const url = new URL(API_BASE_URL + "/");
+    url.searchParams.set("action", "url");
     url.searchParams.set("key", noteKey);
-
     const response = await fetch(url.toString());
     let data = await response.json();
 
